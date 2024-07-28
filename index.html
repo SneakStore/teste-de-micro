@@ -45,7 +45,7 @@
         }
 
         button {
-            background-color: #3BEEE6;
+            background-color: #4169E1;
             color: #fff;
             border: none;
             border-radius: 5px;
@@ -58,7 +58,7 @@
         }
 
         button:hover {
-            background-color: #3BEEE6;
+            background-color: #374ABE;
         }
 
         button:disabled {
@@ -146,6 +146,20 @@
             width: 100%;
             position: relative;
         }
+
+        .gain-control {
+            margin-top: 20px;
+        }
+
+        .gain-control label {
+            font-size: 16px;
+        }
+
+        .gain-control input[type="range"] {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -165,6 +179,10 @@
     <div class="main-content">
         <button id="start-test">Démarrer le Test</button>
         <button id="stop-test" disabled>Arrêter le Test</button>
+        <div class="gain-control">
+            <label for="gain"></label>
+            <input type="range" id="gain" name="gain" min="0" max="2" step="0.1" value="1">
+        </div>
         <div class="audio-level">
             <div class="bar"></div>
         </div>
@@ -192,12 +210,13 @@
             let audioContext;
             let source;
             let analyzer;
+            let gainNode;
 
-            const audioPlayback = document.getElementById('audio-playback');
             const audioLevelBar = document.querySelector('.audio-level .bar');
 
             const startButton = document.getElementById('start-test');
             const stopButton = document.getElementById('stop-test');
+            const gainControl = document.getElementById('gain');
 
             startButton.addEventListener('click', async () => {
                 try {
@@ -205,12 +224,16 @@
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     source = audioContext.createMediaStreamSource(mediaStream);
 
+                    gainNode = audioContext.createGain();
+                    gainNode.gain.value = gainControl.value;
+
                     analyzer = audioContext.createAnalyser();
                     analyzer.fftSize = 256;
                     const bufferLength = analyzer.frequencyBinCount;
                     const dataArray = new Uint8Array(bufferLength);
 
-                    source.connect(analyzer);
+                    source.connect(gainNode);
+                    gainNode.connect(analyzer);
                     analyzer.connect(audioContext.destination);
 
                     const updateAudioLevel = () => {
@@ -247,6 +270,12 @@
                     audioContext.close();
                     startButton.disabled = false;
                     stopButton.disabled = true;
+                }
+            });
+
+            gainControl.addEventListener('input', () => {
+                if (gainNode) {
+                    gainNode.gain.value = gainControl.value;
                 }
             });
         });
